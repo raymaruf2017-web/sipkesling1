@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplikasi Pendataan Penyakit</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Latar Belakang Hijau Muda (Tema Kesehatan) */
+    body { 
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f1f8f5 0%, #d1e7dd 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px 0;
+    }
+    .main-container { 
+      max-width: 1000px; 
+      background: white; 
+      padding: 20px 30px; 
+      border-radius: 15px; 
+      box-shadow: 0 10px 25px rgba(25, 135, 84, 0.15); 
+      margin: auto;
+    }
+    .header-title { color: #0f5132; font-weight: 700; text-transform: uppercase; }
+    
+    /* Tombol dan Navigasi dengan Nuansa Hijau */
+    .nav-pills .nav-link { color: #198754; font-weight: 600; }
+    .nav-pills .nav-link.active { background: linear-gradient(to right, #198754, #20c997); color: white; }
+    .btn-primary, .btn-primary:active { background: linear-gradient(to right, #198754, #20c997); border: none; font-weight: 600; }
+    .btn-primary:hover { background: linear-gradient(to right, #146c43, #1aa179); }
+    
+    .dashboard-charts { display: grid; grid-template-columns: 7fr 3fr; gap: 20px; margin-bottom: 25px; }
+    
+    /* Latar Belakang Diagram Hijau Muda Sesuai Permintaan */
+    .chart-box { 
+      position: relative; 
+      height: 320px; 
+      background: #eafaf1; /* Warna hijau sangat muda untuk latar grafik */
+      border: 1px solid #c3e6cb; 
+      border-radius: 10px; 
+      padding: 15px; 
+      display: flex; 
+      justify-content: center; 
+    }
+    
+    @media (max-width: 768px) { .dashboard-charts { grid-template-columns: 1fr; } }
+    
+    .table-responsive { max-height: 400px; overflow-y: auto; font-size: 0.9em; }
+    thead th { position: sticky; top: 0; background-color: #198754; color: white; z-index: 1;}
+    .section-title { font-size: 1.1rem; border-bottom: 2px solid #d1e7dd; padding-bottom: 5px; margin-bottom: 15px; color: #444; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div class="main-container">
+    <div class="text-center mb-3">
+      <h3 class="header-title">🏥 DATA PASIEN KLINIK SANITASI</h3>
+      <p class="text-muted small">UPTD PUSKESMAS GONENGGATI DONGGALA</p>
+    </div>
+
+    <!-- Navigasi Menu -->
+    <ul class="nav nav-pills nav-fill mb-4" id="menuTabs">
+      <li class="nav-item">
+        <a class="nav-link active" href="#" onclick="switchView('formView')">📝 Form Input Laporan</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#" onclick="switchView('loginView')">🔒 Dashboard Admin</a>
+      </li>
+    </ul>
+
+    <!-- ================= VIEW 1: FORM PUBLIK ================= -->
+    <div id="formView">
+      <form id="penyakitForm">
+        
+        <div class="section-title">A. Data Identitas Pasien</div>
+        
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">NIK Pasien</label>
+            <input type="number" name="nik" class="form-control" required placeholder="Masukkan 16 digit NIK">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Nomor HP Pasien / Keluarga</label>
+            <input type="number" name="hp" class="form-control" required placeholder="Contoh: 0812345...">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Nama Pasien</label>
+            <input type="text" name="nama" class="form-control" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Nama Kepala Keluarga (KK)</label>
+            <input type="text" name="namakk" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Umur Pasien (Tahun)</label>
+            <input type="number" name="umur" class="form-control" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Jenis Kelamin</label>
+            <div class="mt-2">
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="jk" id="jkL" value="Laki-laki" required>
+                <label class="form-check-label" for="jkL">Laki-laki</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="jk" id="jkP" value="Perempuan" required>
+                <label class="form-check-label" for="jkP">Perempuan</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Kelurahan / Desa</label>
+            <select name="kelurahan" class="form-select" required>
+              <option value="" disabled selected>-- Pilih Wilayah --</option>
+              <option value="Boya">Boya</option>
+              <option value="Maleni">Maleni</option>
+              <option value="Gunung Bale">Gunung Bale</option>
+              <option value="Labuan Bajo">Labuan Bajo</option>
+              <option value="Kabonga Kecil">Kabonga Kecil</option>
+              <option value="Kabonga Besar">Kabonga Besar</option>
+              <option value="Ganti">Ganti</option>
+              <option value="Tanjung Batu">Tanjung Batu</option>
+              <option value="Loli Saluran">Loli Saluran</option>
+              <option value="Loli Pesua">Loli Pesua</option>
+              <option value="Loli Dondo">Loli Dondo</option>
+              <option value="Loli Tasiburi">Loli Tasiburi</option>
+              <option value="Loli Oge">Loli Oge</option>
+              <option value="Boneoge">Boneoge</option>
+            </select>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Alamat Detail Domisili</label>
+            <input type="text" name="alamat" class="form-control" placeholder="Jalan, RT/RW, dsb.">
+          </div>
+        </div>
+
+        <!-- BAGIAN 2: DATA PENYAKIT & INVESTIGASI -->
+        <div class="section-title mt-4">B. Investigasi Penyakit Lapangan</div>
+        
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Jenis Penyakit Dominan</label>
+            <!-- 8 Jenis Penyakit Ditambahkan -->
+            <select name="penyakit" class="form-select">
+              <option value="DBD">1. DBD</option>
+              <option value="Diare">2. Diare</option>
+              <option value="Cacingan">3. Cacingan</option>
+              <option value="Campak">4. Campak</option>
+              <option value="Pneumonia">5. Pneumonia</option>
+              <option value="Disentri">6. Disentri</option>
+              <option value="Malaria">7. Malaria</option>
+              <option value="Scabies">8. Scabies</option>
+            </select>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Koordinat GPS Lokasi</label>
+            <div class="input-group">
+              <input type="text" id="koordinat" name="koordinat" class="form-control" readonly>
+              <button type="button" class="btn btn-secondary" onclick="getLocation()">📍 Ambil</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Kondisi Lingkungan (Hasil Pantauan)</label>
+          <textarea name="lingkungan" class="form-control" rows="2" placeholder="Contoh: Saluran pembuangan mampet, ada genangan air"></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Hasil Wawancara (Keluhan/Riwayat)</label>
+          <textarea name="wawancara" class="form-control" rows="2" placeholder="Catatan informasi langsung dari pasien atau keluarga"></textarea>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Penyebab (Faktor Risiko / Dugaan)</label>
+            <textarea name="penyebab" class="form-control" rows="2" placeholder="Contoh: Perilaku PHBS kurang, Jentik Nyamuk"></textarea>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Saran / Tindak Lanjut Petugas</label>
+            <textarea name="saran" class="form-control" rows="2" placeholder="Contoh: Rujukan faskes lanjutan, Fogging, Edukasi 3M Plus"></textarea>
+          </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100 py-3 mt-2" id="btnSubmit">💾 SIMPAN DATA LAPORAN</button>
+      </form>
+      <div id="formStatus" class="mt-3 text-center"></div>
+    </div>
+
+    <!-- ================= VIEW 2: LOGIN ADMIN ================= -->
+    <div id="loginView" style="display: none;">
+      <div class="card p-4 mx-auto" style="max-width: 400px; border:1px solid #d1e7dd; background-color:#f8fcf9;">
+        <h5 class="text-center mb-3" style="color: #198754;">Login Dashboard</h5>
+        <input type="password" id="adminPassword" class="form-control mb-3" placeholder="Masukkan Password Admin">
+        <button class="btn btn-primary w-100" onclick="loginAdmin()" id="btnLogin">Masuk Dashboard</button>
+        <div id="loginStatus" class="mt-2 text-center text-danger small"></div>
+      </div>
+    </div>
+
+    <!-- ================= VIEW 3: DASHBOARD ADMIN ================= -->
+    <div id="dashboardView" style="display: none;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="text-secondary mb-0">Dashboard Laporan Penyakit</h4>
+        <div>
+          <!-- Tombol Download CSV Excel Ditambahkan -->
+          <button class="btn btn-sm btn-success me-2" onclick="downloadExcel()">📥 Download Data (Excel/CSV)</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="logout()">Logout</button>
+        </div>
+      </div>
+      <hr>
+      
+      <!-- Container Grafik -->
+      <div class="dashboard-charts">
+        <div class="chart-box"><canvas id="barChart"></canvas></div>
+        <div class="chart-box"><canvas id="donutChart"></canvas></div>
+      </div>
+
+      <!-- Pencarian -->
+      <div class="mb-3">
+        <input type="text" id="searchInput" class="form-control border-success" placeholder="🔍 Cari Nama, NIK, KK, No HP, Kelurahan atau Penyakit..." onkeyup="filterTabel()">
+      </div>
+      
+      <!-- Tabel Data -->
+      <div class="table-responsive shadow-sm border rounded border-success">
+        <table class="table table-hover mb-0" id="dataTable">
+          <thead>
+            <tr>
+              <th>Tgl Lapor</th>
+              <th>Nama Pasien & Kontak</th>
+              <th>Umur/JK</th>
+              <th>Kelurahan & Penyakit</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="4" class="text-center">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ================= PENGATURAN URL APP SCRIPT =================
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhsMV3Sahaiyn1QKo6Bxb5lTcq7e_eX_c91lCfka7Wpmx768zPd6aWjwKZx5m0fBhSdQ/exec";
+    
+    let adminDataCache = [];
+    let donutChartObj = null;
+    let barChartObj = null;
+
+    // 8 Warna Berbeda untuk 8 Penyakit
+    const warnaPenyakit = {
+      'DBD': '#ff3b3b',         // Merah
+      'Diare': '#36a2eb',       // Biru Terang
+      'Cacingan': '#8d6e63',    // Coklat
+      'Campak': '#ff9f40',      // Oranye
+      'Pneumonia': '#9966ff',   // Ungu
+      'Disentri': '#ffcd56',    // Kuning Emas
+      'Malaria': '#20c997',     // Teal / Hijau Kebiruan
+      'Scabies': '#a6b0bd'      // Abu-abu
+    };
+
+    function switchView(viewId) {
+      document.getElementById('formView').style.display = 'none';
+      document.getElementById('loginView').style.display = 'none';
+      document.getElementById('dashboardView').style.display = 'none';
+      document.getElementById(viewId).style.display = 'block';
+      
+      const links = document.querySelectorAll('.nav-link');
+      links.forEach(l => l.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    function getLocation() {
+      const kInput = document.getElementById('koordinat');
+      kInput.value = "Mencari lokasi...";
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => kInput.value = pos.coords.latitude + ", " + pos.coords.longitude,
+          () => alert("Gagal ambil lokasi GPS.")
+        );
+      }
+    }
+
+    document.getElementById('penyakitForm').onsubmit = function(e) {
+      e.preventDefault();
+      const statusDiv = document.getElementById('formStatus');
+      const btn = document.getElementById('btnSubmit');
+      
+      const jkDipilih = document.querySelector('input[name="jk"]:checked').value;
+      
+      btn.disabled = true; btn.innerText = "Menyimpan...";
+      statusDiv.innerHTML = '<span class="text-muted">Proses mengirim ke server...</span>';
+
+      const payload = {
+        action: "insert",
+        nik: this.nik.value,
+        nama: this.nama.value,
+        namakk: this.namakk.value,
+        umur: this.umur.value,
+        jk: jkDipilih,
+        kelurahan: this.kelurahan.value,
+        alamat: this.alamat.value,
+        hp: this.hp.value,
+        penyakit: this.penyakit.value,
+        lingkungan: this.lingkungan.value,
+        wawancara: this.wawancara.value,
+        penyebab: this.penyebab.value,
+        saran: this.saran.value,
+        koordinat: this.koordinat.value
+      };
+
+      fetch(SCRIPT_URL, {
+        method: "POST", body: JSON.stringify(payload), headers: { "Content-Type": "text/plain;charset=utf-8" }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          statusDiv.innerHTML = '<div class="alert alert-success mt-2">✅ Data Berhasil Disimpan!</div>';
+          document.getElementById('penyakitForm').reset();
+          window.scrollTo(0, 0); 
+        } else { statusDiv.innerHTML = '<div class="alert alert-danger">Gagal Menyimpan.</div>'; }
+      })
+      .catch(err => { statusDiv.innerHTML = '<div class="alert alert-danger">Error Jaringan/URL.</div>'; })
+      .finally(() => { btn.disabled = false; btn.innerText = "💾 SIMPAN DATA LAPORAN"; });
+    };
+
+    function loginAdmin() {
+      const pass = document.getElementById('adminPassword').value;
+      const status = document.getElementById('loginStatus');
+      const btn = document.getElementById('btnLogin');
+      
+      if(pass === "") return;
+      btn.disabled = true; btn.innerText = "Memverifikasi...";
+
+      fetch(SCRIPT_URL, {
+        method: "POST", body: JSON.stringify({ action: "getData", password: pass }), headers: { "Content-Type": "text/plain;charset=utf-8" }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          adminDataCache = data.data; 
+          document.getElementById('adminPassword').value = "";
+          status.innerText = "";
+          document.getElementById('loginView').style.display = 'none';
+          document.getElementById('dashboardView').style.display = 'block';
+          renderDashboard(); 
+        } else {
+          status.innerText = "❌ Password Salah!";
+        }
+      })
+      .catch(err => status.innerText = "Error server/jaringan.")
+      .finally(() => { btn.disabled = false; btn.innerText = "Masuk Dashboard"; });
+    }
+
+    function logout() {
+      adminDataCache = [];
+      document.getElementById('dashboardView').style.display = 'none';
+      document.getElementById('loginView').style.display = 'block';
+    }
+
+    // --- FUNGSI DOWNLOAD KE EXCEL/CSV ---
+    function downloadExcel() {
+      if (adminDataCache.length === 0) {
+        alert("Belum ada data untuk diunduh.");
+        return;
+      }
+
+      // Format Header Tabel
+      const headerBaris = ["Tanggal Lapor", "NIK", "Nama Pasien", "Nama KK", "Umur", "Jenis Kelamin", "Kelurahan", "Alamat Domisili", "Nomor HP", "Penyakit Dominan", "Kondisi Lingkungan", "Hasil Wawancara", "Penyebab", "Saran & Tindak Lanjut", "Koordinat GPS", "Status"];
+      
+      // Menggabungkan string CSV
+      let isiCSV = "data:text/csv;charset=utf-8," + headerBaris.join(",") + "\n";
+
+      adminDataCache.forEach(row => {
+        let tgl = new Date(row.tanggal).toLocaleDateString('id-ID');
+        
+        // Memastikan koma di dalam teks (misal alamat) tidak merusak format Excel
+        let barisData = [
+          tgl, row.nik, row.nama, row.namakk, row.umur, row.jk, row.kelurahan, 
+          row.alamat, row.hp, row.penyakit, row.lingkungan, row.wawancara, 
+          row.penyebab, row.saran, row.koordinat, row.status
+        ];
+
+        // Format cell Excel agar aman
+        let formatBaris = barisData.map(item => {
+          let str = String(item).replace(/"/g, '""'); // Handle tanda kutip
+          return `"${str}"`; 
+        }).join(",");
+        
+        isiCSV += formatBaris + "\n";
+      });
+
+      // Proses Download Otomatis
+      const encodedUri = encodeURI(isiCSV);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "Rekap_Data_Penyakit.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function renderDashboard() {
+      renderTabel(adminDataCache);
+
+      // 8 Daftar Penyakit
+      const semuaPenyakit = ['DBD', 'Diare', 'Cacingan', 'Campak', 'Pneumonia', 'Disentri', 'Malaria', 'Scabies'];
+      const kelurahanSet = new Set(adminDataCache.map(d => d.kelurahan));
+      const labelKelurahan = Array.from(kelurahanSet).sort(); 
+
+      const datasetBar = semuaPenyakit.map(penyakit => {
+        const dataPerKelurahan = labelKelurahan.map(kel => {
+          return adminDataCache.filter(d => d.kelurahan === kel && d.penyakit === penyakit).length;
+        });
+        return { label: penyakit, data: dataPerKelurahan, backgroundColor: warnaPenyakit[penyakit] };
+      });
+
+      if(barChartObj !== null) barChartObj.destroy();
+      const ctxBar = document.getElementById('barChart').getContext('2d');
+      barChartObj = new Chart(ctxBar, {
+        type: 'bar',
+        data: { labels: labelKelurahan, datasets: datasetBar },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'Kasus per Kelurahan' } },
+          scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+      });
+
+      const hitungDonat = {};
+      adminDataCache.forEach(row => { hitungDonat[row.penyakit] = (hitungDonat[row.penyakit] || 0) + 1; });
+      const labelDonat = Object.keys(hitungDonat);
+      const dataDonat = labelDonat.map(p => hitungDonat[p]);
+      const warnaDonat = labelDonat.map(p => warnaPenyakit[p]);
+
+      if(donutChartObj !== null) donutChartObj.destroy();
+      const ctxDonut = document.getElementById('donutChart').getContext('2d');
+      donutChartObj = new Chart(ctxDonut, {
+        type: 'doughnut',
+        data: { labels: labelDonat, datasets: [{ data: dataDonat, backgroundColor: warnaDonat }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'Total Kasus' } }
+        }
+      });
+    }
+
+    function renderTabel(data) {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = "";
+      if(data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Belum ada data</td></tr>';
+        return;
+      }
+      
+      const sortedData = [...data].reverse();
+
+      sortedData.forEach(row => {
+        let tgl = new Date(row.tanggal).toLocaleDateString('id-ID');
+        let jkSingkat = row.jk === 'Laki-laki' ? 'L' : (row.jk === 'Perempuan' ? 'P' : '-');
+        
+        // Pengecekan warna agar jika ada penyakit lama tidak error
+        let warnaBadge = warnaPenyakit[row.penyakit] || '#6c757d'; 
+
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${tgl}</td>
+          <td>
+             <strong>${row.nama}</strong><br>
+             <span class="badge bg-light text-success border border-success">KK: ${row.namakk}</span><br>
+             <small class="text-muted">📞 ${row.hp}</small>
+          </td>
+          <td>${row.umur} Thn / ${jkSingkat}</td>
+          <td>
+             ${row.kelurahan}<br>
+             <span class="badge" style="background-color: ${warnaBadge}">${row.penyakit}</span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterTabel() {
+      const keyword = document.getElementById('searchInput').value.toLowerCase();
+      const hasilFilter = adminDataCache.filter(row => {
+        return row.nama.toLowerCase().includes(keyword) || 
+               row.namakk.toLowerCase().includes(keyword) ||
+               row.nik.toString().includes(keyword) || 
+               row.kelurahan.toLowerCase().includes(keyword) || 
+               row.hp.toString().includes(keyword) ||
+               row.penyakit.toLowerCase().includes(keyword); // Bisa cari berdasarkan penyakit
+      });
+      renderTabel(hasilFilter);
+    }
+  </script>
+</body>
+</html>
